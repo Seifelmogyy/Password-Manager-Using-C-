@@ -19,6 +19,22 @@ size_t hashPassword(const string& password) {
     return hasher(password); // Compute the hash value of the password
 }
 
+// Caesar cipher encryption function
+string encryptPassword(const string& password, int shift) {
+    string encryptedPassword = password;
+    for (char& c : encryptedPassword) {
+        if (isalpha(c)) {
+            char base = isupper(c) ? 'A' : 'a';
+            c = ((c - base + shift) % 26) + base;
+        }
+    }
+    return encryptedPassword;
+}
+
+// Caesar cipher decryption function
+string decryptPassword(const string& encryptedPassword, int shift) {
+    return encryptPassword(encryptedPassword, -shift);
+}
 
 // User class to represent user credentials
 class User {
@@ -92,10 +108,11 @@ bool authenticateUser(const string& filename, const string& username, const stri
 
 
 // Function to write data to a file
-void writeToFile(const string& filename, const string& username, const string& password, const string& website) {
+void writeToFile(const string& filename, const string& username, const string& password, const string& website, int shift) {
     ofstream file(filename, ios::app); // Open file in append mode
     if (file.is_open()) {
-        file << "Username: " << username << ", Password: " << password << ", Website: " << website << endl;
+        string encryptedPassword = encryptPassword(password, shift);
+        file << "Username: " << username << ", Password: " << encryptedPassword << ", Website: " << website << endl;
         file.close(); // Close the file
         cout << "Data written to file successfully." << endl;
     } else {
@@ -104,12 +121,20 @@ void writeToFile(const string& filename, const string& username, const string& p
 }
 
 // Function to read data from a file
-void readFromFile(const string& filename) {
+void readFromFile(const string& filename, int shift) {
     ifstream file(filename); // Open file for reading
     if (file.is_open()) {
         string line;
         cout << "Contents of file:" << endl;
         while (getline(file, line)) {
+            // Decrypt the password read from the file for display
+            size_t pos1 = line.find("Password: ");
+            size_t pos2 = line.find(", Website: ");
+            if (pos1 != string::npos && pos2 != string::npos) {
+                string encryptedPassword = line.substr(pos1 + 10, pos2 - pos1 - 10);
+                string decryptedPassword = encryptPassword(encryptedPassword, -shift);
+                line.replace(pos1 + 10, pos2 - pos1 - 10, decryptedPassword);
+            }
             cout << line << endl; // Print each line of the file
         }
         file.close(); // Close the file
@@ -117,6 +142,7 @@ void readFromFile(const string& filename) {
         cout << "Error: Unable to open file for reading." << endl;
     }
 }
+
 
 // Function to delete a file
 void deleteFile(const string& filename) {
@@ -155,8 +181,9 @@ string generateRandomPassword(int length = 18) { // Default length is 18
 int main() {
     string filename = "data.txt";
     string username = "users.txt";
+    int shift = 3;
     
-    cout<< "welcome to your Passwrd Manager";
+    cout<< "welcome to your Passwrd Manager" << endl;
     char choice;
     
     while (true) {
@@ -217,11 +244,11 @@ int main() {
                                 cin >> password;
                                 cout << "Enter website: ";
                                 cin >> website;
-                                writeToFile(filename, username, password, website); // Write data to file
+                                writeToFile(filename, username, password, website, shift); // Write data to file
                                 break;
                             }
                             case '2':
-                                readFromFile(filename);
+                                readFromFile(filename, shift);
                                 break;
                                 
                             case '3':
